@@ -9,6 +9,7 @@ import ToolRack from './components/ToolRack';
 import FirstPuzzle from './components/FirstPuzzle';
 import SkillConstellation from './components/SkillConstellation';
 import ToolkitPricing from './components/ToolkitPricing';
+import ChallengeHub from './components/ChallengeHub';
 import Footer from './components/Footer';
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
     <div className="font-['Poppins',sans-serif] min-h-screen">
       <Header currentUser={currentUser} onSignOut={handleSignOut} />
       <WorkshopHero userName={userName} />
+      <ChallengeHub />
       <TrophyRoom />
       <ToolRack />
       <FirstPuzzle userName={userName} />

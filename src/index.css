@@ -578,4 +578,253 @@
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
   }
+  
+  /* Math Challenge Specific Animations */
+  .challenge-appear {
+    animation: challengeAppear 0.8s cubic-bezier(0.26, 0.53, 0.74, 1.48) forwards;
+  }
+  
+  .question-appear {
+    animation: questionAppear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform-origin: center;
+    opacity: 0;
+  }
+  
+  .option-appear {
+    animation: optionAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  
+  .option-selected {
+    animation: optionSelected 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  
+  .option-correct {
+    animation: optionCorrect 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  
+  .option-incorrect {
+    animation: optionIncorrect 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  
+  .leaderboard-appear {
+    animation: leaderboardAppear 0.8s cubic-bezier(0.26, 0.53, 0.74, 1.48) forwards;
+  }
+  
+  .leaderboard-row-appear {
+    animation: leaderboardRowAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  .score-pulse {
+    animation: scorePulse 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  
+  .timer-warning {
+    animation: timerWarning 1s ease-in-out infinite alternate;
+  }
+  
+  .confetti {
+    animation: confetti 4s ease-in-out forwards;
+  }
+  
+  .animate-float-random {
+    animation: floatRandom 8s ease-in-out infinite;
+  }
+  
+  @keyframes floatRandom {
+    0%, 100% {
+      transform: translateY(0) translateX(0) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-15px) translateX(10px) rotate(5deg);
+    }
+    50% {
+      transform: translateY(-25px) translateX(-5px) rotate(-3deg);
+    }
+    75% {
+      transform: translateY(-10px) translateX(-10px) rotate(2deg);
+    }
+  }
+  
+  .slide-left {
+    animation: slideLeft 0.5s ease-out forwards;
+  }
+  
+  .slide-right {
+    animation: slideRight 0.5s ease-out forwards;
+  }
+  
+  .answer-selected {
+    animation: answerSelected 0.5s ease-out forwards;
+  }
+  
+  @keyframes slideLeft {
+    0% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    50% {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    51% {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes slideRight {
+    0% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    50% {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    51% {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes answerSelected {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes challengeAppear {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes questionAppear {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes optionAppear {
+    0% {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes optionSelected {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes optionCorrect {
+    0%, 100% {
+      background-color: rgba(16, 185, 129, 0.2);
+    }
+    50% {
+      background-color: rgba(16, 185, 129, 0.4);
+    }
+  }
+  
+  @keyframes optionIncorrect {
+    0%, 100% {
+      background-color: rgba(239, 68, 68, 0.2);
+    }
+    50% {
+      background-color: rgba(239, 68, 68, 0.4);
+    }
+  }
+  
+  @keyframes leaderboardAppear {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes leaderboardRowAppear {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scorePulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.5);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes timerWarning {
+    0% {
+      color: rgba(239, 68, 68, 0.7);
+    }
+    100% {
+      color: rgba(239, 68, 68, 1);
+    }
+  }
+  
+  @keyframes confetti {
+    0% {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(100vh) rotate(720deg);
+    }
+  }
 }
