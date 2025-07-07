@@ -22,6 +22,20 @@ firebase deploy --only firestore:rules
 
 The current security rules in `firestore.rules` allow full read/write access for development purposes. Make sure to implement proper security rules before deploying to production.
 
+### Firestore Indexes
+
+The application requires specific Firestore indexes for queries to work properly. To deploy the indexes, follow these steps:
+
+```bash
+# Deploy Firestore indexes
+./deploy-indexes.sh
+
+# Or manually with Firebase CLI
+firebase deploy --only firestore:indexes
+```
+
+The required indexes are defined in `firestore.indexes.json`. If you encounter errors about missing indexes, make sure to deploy the indexes using the commands above.
+
 ## Troubleshooting
 
 ### Firebase Permission Issues
@@ -31,6 +45,33 @@ If you encounter Firebase permission errors like `FirebaseError: Missing or insu
 1. You have deployed the Firestore security rules
 2. You are signed in with a user that has appropriate permissions
 3. The Firebase project is correctly configured in `src/firebase/config.ts`
+
+### Missing Index Errors
+
+If you see errors like `FirebaseError: The query requires an index`, follow these steps:
+
+1. Deploy the Firestore indexes using the provided script: `./deploy-indexes.sh`
+2. Alternatively, you can click on the URL in the error message to create the index directly in the Firebase console
+3. Wait a few minutes for the indexes to be created and become active
+
+#### Common Index Issues
+
+- **Leaderboard Query Index**: The application requires a composite index for the `challengeAttempts` collection with fields `challengeId`, `score` (descending), `timeSpent` (ascending), and `__name__` (ascending). This is needed for the leaderboard functionality.
+
+- **User Best Attempt Index**: Queries for user's best attempts require an index on `userId`, `challengeId`, `score` (descending), and `timeSpent` (ascending).
+
+If you encounter index errors, check the error message for the specific index URL and either:
+
+1. Add the index to `firestore.indexes.json` and deploy using `./deploy-indexes.sh`
+2. Click the URL in the error message to create the index directly in the Firebase console
+
+### ERR_BLOCKED_BY_CLIENT Errors
+
+If you see `net::ERR_BLOCKED_BY_CLIENT` errors in the console:
+
+1. This is typically caused by ad blockers or privacy extensions blocking Firebase connections
+2. Temporarily disable any ad blockers or privacy extensions
+3. Add exceptions for your development domain in your ad blocker settings
 
 ### Start Challenge Button Not Working
 

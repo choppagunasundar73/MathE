@@ -29,6 +29,7 @@ export interface UserChallengeAttempt {
   totalQuestions: number;
   completedAt: Date;
   timeSpent: number; // in seconds
+  answers?: Record<string, string>; // Optional map of question IDs to selected answers
 }
 
 export interface LeaderboardEntry extends UserChallengeAttempt {

@@ -7,7 +7,7 @@ import { Brain, Clock, CheckCircle, XCircle, Award, ArrowRight, RefreshCw, Chevr
 
 const MathChallenge: React.FC = () => {
   const { currentUser } = useAuth();
-  const { currentChallenge, userBestAttempt, refreshLeaderboard } = useChallenge();
+  const { currentChallenge, userBestAttempt, refreshLeaderboard, markCurrentChallengeCompleted } = useChallenge();
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -29,7 +29,9 @@ const MathChallenge: React.FC = () => {
 
   // Initialize the challenge
   useEffect(() => {
+    console.log('MathChallenge mounted. currentChallenge:', currentChallenge);
     if (currentChallenge) {
+      console.log('Initializing challenge with ID:', currentChallenge.id);
       // Reset state when challenge changes
       setCurrentQuestionIndex(0);
       setSelectedAnswers({});
@@ -44,6 +46,15 @@ const MathChallenge: React.FC = () => {
         setTimeRemaining(currentChallenge.timeLimit);
         startTimer();
       }
+      
+      // Verify that questions are loaded
+      if (!currentChallenge.questions || currentChallenge.questions.length === 0) {
+        console.error('Challenge has no questions:', currentChallenge);
+      } else {
+        console.log(`Challenge has ${currentChallenge.questions.length} questions`);
+      }
+    } else {
+      console.warn('MathChallenge mounted but no currentChallenge is available');
     }
     
     return () => {
@@ -130,19 +141,24 @@ const MathChallenge: React.FC = () => {
     }
   };
 
-  // Submit the challenge
+  // Submit the challenge results
   const handleSubmitChallenge = async () => {
-    if (!currentChallenge || !currentUser) return;
-    
-    // Stop the timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    if (!currentChallenge || !currentUser) {
+      console.error('Cannot submit: Missing challenge or user');
+      return;
     }
     
-    setIsSubmitting(true);
-    setEndTime(new Date());
-    
     try {
+      console.log(`Submitting results for challenge: ${currentChallenge.id}`);
+      
+      // Stop the timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
+      setIsSubmitting(true);
+      setEndTime(new Date());
+      
       // Calculate results
       let correctCount = 0;
       let totalScore = 0;
@@ -159,6 +175,8 @@ const MathChallenge: React.FC = () => {
       const timeSpent = startTime && endTime 
         ? Math.floor((endTime.getTime() - startTime.getTime()) / 1000)
         : 0;
+      
+      console.log(`Score: ${totalScore}, Correct answers: ${correctCount}/${currentChallenge.questions.length}`);
       
       // Save results
       const results = {
@@ -179,8 +197,23 @@ const MathChallenge: React.FC = () => {
         ...results
       };
       
-      await submitChallengeAttempt(attemptData);
-      await refreshLeaderboard();
+      console.log('Preparing to submit user attempt:', attemptData);
+      
+      try {
+        const attemptId = await submitChallengeAttempt(attemptData);
+        console.log('Successfully submitted attempt with ID:', attemptId);
+        
+        // Mark the challenge as completed
+        await markCurrentChallengeCompleted(results.score, results.timeSpent);
+        
+        // No need to manually refresh the leaderboard here
+        // The Leaderboard component has its own refresh mechanism
+        // and markCurrentChallengeCompleted already triggers refreshCompletedChallenges
+        console.log('Challenge completed, leaderboard will refresh automatically');
+      } catch (submitError) {
+        console.error('Failed to submit challenge attempt:', submitError);
+        alert('There was an error saving your results. Please try again.');
+      }
       
       // Show results
       setShowResults(true);

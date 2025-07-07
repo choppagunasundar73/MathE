@@ -1,16 +1,64 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useChallenge } from '../context/ChallengeContext';
 import { useAuth } from '../context/AuthContext';
 import { Trophy, Medal, Clock, User, RefreshCw } from 'lucide-react';
 
 const Leaderboard: React.FC = () => {
-  const { currentChallenge, leaderboard, refreshLeaderboard, isLoading } = useChallenge();
+  const { currentChallenge, leaderboard, refreshLeaderboard, isLoading, error } = useChallenge();
   const { currentUser } = useAuth();
 
+  // Refresh leaderboard when current challenge changes and set up periodic refresh
+  // Using a ref to track the previous challenge ID
+  const prevChallengeIdRef = useRef<string | null>(null);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    // Refresh leaderboard when component mounts
-    refreshLeaderboard();
-  }, [refreshLeaderboard]);
+    const currentChallengeId = currentChallenge?.id || null;
+    const prevChallengeId = prevChallengeIdRef.current;
+    
+    // Only refresh if the challenge has changed
+    if (currentChallengeId !== prevChallengeId) {
+      console.log(`Leaderboard: Challenge changed from ${prevChallengeId} to ${currentChallengeId}`);
+      
+      // Clear existing interval if any
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        console.log('Cleared previous leaderboard refresh interval');
+        refreshIntervalRef.current = null;
+      }
+      
+      // Initial refresh for the new challenge
+      if (currentChallenge) {
+        console.log(`Initial leaderboard refresh for challenge ${currentChallengeId}`);
+        refreshLeaderboard(currentChallenge.id);
+        
+        // Set up periodic refresh every 60 seconds (reduced frequency)
+        refreshIntervalRef.current = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            console.log('Periodic leaderboard refresh (60s interval)');
+            refreshLeaderboard(currentChallenge.id);
+          } else {
+            console.log('Skipping leaderboard refresh - page not visible');
+          }
+        }, 60000); // 60 seconds
+        
+        console.log('Set up new leaderboard refresh interval (60s)');
+      }
+      
+      // Update the previous challenge ref
+      prevChallengeIdRef.current = currentChallengeId;
+    }
+    
+    // Clean up interval on unmount
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        console.log('Cleaned up leaderboard refresh interval on unmount');
+        refreshIntervalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge]); // Don't add refreshLeaderboard to dependency array
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -34,7 +82,7 @@ const Leaderboard: React.FC = () => {
           </div>
           
           <button 
-            onClick={refreshLeaderboard}
+            onClick={() => refreshLeaderboard(currentChallenge?.id)}
             disabled={isLoading}
             className="p-2 rounded-full bg-slate-700/50 text-violet-300 hover:bg-slate-700 hover:text-white transition-colors"
             title="Refresh Leaderboard"
@@ -46,11 +94,69 @@ const Leaderboard: React.FC = () => {
 
       {/* Leaderboard Content */}
       <div className="p-6">
-        {leaderboard.length === 0 ? (
+        {isLoading && !error ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
+              <RefreshCw className="w-8 h-8 text-violet-400 animate-spin" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Loading Leaderboard</h3>
+            <p className="text-violet-300">Retrieving the latest rankings...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Leaderboard Error</h3>
+            <p className="text-violet-300 mb-4">{error}</p>
+            <button 
+              onClick={() => refreshLeaderboard(currentChallenge?.id)}
+              className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : leaderboard.length === 0 ? (
           <div className="text-center py-12">
             <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">No Entries Yet</h3>
-            <p className="text-violet-300">Be the first to complete this challenge!</p>
+            <p className="text-violet-300 mb-4">Be the first to complete this challenge!</p>
+            
+            {currentUser && (
+              <div className="mt-4">
+                <button 
+                  onClick={() => {
+                    // Create a test submission for debugging purposes
+                    if (currentChallenge && currentUser) {
+                      import('../firebase/challengeService').then(({ submitChallengeAttempt }) => {
+                        submitChallengeAttempt({
+                          userId: currentUser.uid,
+                          userName: currentUser.displayName || 'Anonymous User',
+                          userPhotoURL: currentUser.photoURL || '',
+                          challengeId: currentChallenge.id,
+                          score: Math.floor(Math.random() * currentChallenge.totalPoints) + 1,
+                          timeSpent: Math.floor(Math.random() * 300) + 60, // 1-6 minutes
+                          correctAnswers: Math.floor(Math.random() * currentChallenge.questions.length) + 1,
+                          totalQuestions: currentChallenge.questions.length,
+                          answers: {}
+                        }).then(() => {
+                          console.log('Test submission created successfully');
+                          refreshLeaderboard(currentChallenge.id);
+                        }).catch(err => {
+                          console.error('Error creating test submission:', err);
+                        });
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
+                >
+                  Create Test Entry
+                </button>
+                <p className="text-xs text-slate-500 mt-2">This button is for testing only</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

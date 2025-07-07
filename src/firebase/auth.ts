@@ -1,5 +1,6 @@
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { auth, googleProvider } from './config';
+import { FirebaseError } from '../types/firebase-error';
 
 // Sign in with Google
 export const signInWithGoogle = async () => {
@@ -8,27 +9,31 @@ export const signInWithGoogle = async () => {
     // Log that we're configuring the provider
     console.log('Configured Google provider, initiating popup...');
     
+    // Add prompt parameter to force account selection
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
     const result = await signInWithPopup(auth, googleProvider);
     console.log('Google sign-in successful!');
     return { user: result.user, error: null };
-  } catch (error: any) {
-    // Enhanced error logging
-    console.error('Popup error details: ');
-    console.error(`- Code: ${error.code}`);
-    console.error(`- Message: ${error.message}`);
-    
-    // Check for specific error types
-    if (error.code === 'auth/popup-blocked') {
-      console.error('The popup was blocked by the browser. Please allow popups for this site.');
-    } else if (error.code === 'auth/popup-closed-by-user') {
-      console.error('The popup was closed by the user before completing the sign-in.');
-    } else if (error.code === 'auth/cancelled-popup-request') {
-      console.error('Multiple popup requests were triggered. Only the latest one will be processed.');
-    } else if (error.code === 'auth/configuration-not-found') {
-      console.error('Firebase configuration issue. Please check your Firebase project settings in the Firebase console.');
+  } catch (error: unknown) {
+    const firebaseError = error as FirebaseError;
+    if (typeof error === 'object' && error !== null && 'code' in firebaseError) {
+      console.error('Firebase Auth Error:', firebaseError.code, firebaseError.message);
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        return { user: null, error: 'Popup closed by user.' };
+      } else if (firebaseError.code === 'auth/cancelled-popup-request') {
+        return { user: null, error: 'Popup already opened.' };
+      } else if (firebaseError.code === 'auth/operation-not-allowed') {
+        return { user: null, error: 'Email/password accounts not enabled.' };
+      } else {
+        return { user: null, error: firebaseError.message };
+      }
+    } else {
+      console.error('Unknown error during sign-in:', error);
+      return { user: null, error: 'An unknown error occurred during sign-in.' };
     }
-    
-    return { user: null, error };
   }
 };
 

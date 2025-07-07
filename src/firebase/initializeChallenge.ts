@@ -1,11 +1,30 @@
-import { collection, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, addDoc, serverTimestamp, limit, CollectionReference, DocumentData } from 'firebase/firestore';
+import { MathChallenge } from '../types/challenge';
 import { db } from './config';
 import { sampleMathChallenge, algebraChallenge, geometryChallenge } from '../data/mathChallenges';
 
 // Initialize challenges in Firestore if they don't exist
 export const initializeChallenge = async (): Promise<string[]> => {
   try {
+    console.log('Starting challenge initialization...');
+    
+    // Check if collections exist, create them if they don't
     const challengesCollection = collection(db, 'challenges');
+    const attemptsCollection = collection(db, 'challengeAttempts');
+    const leaderboardCollection = collection(db, 'leaderboard');
+    
+    // Verify collections exist by trying to get a document
+    try {
+      // This is just to verify the collections exist
+      await getDocs(query(challengesCollection, limit(1)));
+      await getDocs(query(attemptsCollection, limit(1)));
+      await getDocs(query(leaderboardCollection, limit(1)));
+      console.log('All required collections exist');
+    } catch (collectionError) {
+      console.error('Error verifying collections:', collectionError);
+      // Collections will be created automatically when documents are added
+    }
+    
     const challengeIds: string[] = [];
     
     // Initialize sample math challenge
@@ -32,6 +51,7 @@ export const initializeChallenge = async (): Promise<string[]> => {
     );
     challengeIds.push(geometryChallengeId);
     
+    console.log('Challenge initialization complete with IDs:', challengeIds);
     return challengeIds;
   } catch (error) {
     console.error('Error initializing challenges:', error);
@@ -41,8 +61,8 @@ export const initializeChallenge = async (): Promise<string[]> => {
 
 // Helper function to initialize a single challenge
 const initializeSingleChallenge = async (
-  challengesCollection: any,
-  challengeData: any,
+  challengesCollection: CollectionReference<DocumentData, DocumentData>,
+  challengeData: MathChallenge,
   challengeName: string
 ): Promise<string> => {
   // Check if the challenge already exists

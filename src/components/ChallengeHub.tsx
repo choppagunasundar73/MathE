@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useChallenge } from '../context/ChallengeContext';
 import MathChallenge from './MathChallenge';
 import Leaderboard from './Leaderboard';
-import { Brain, Trophy, ArrowRight, Sparkles, ChevronDown, RefreshCw } from 'lucide-react';
+import { Brain, Trophy, ArrowRight, Sparkles, ChevronDown, RefreshCw, CheckCircle } from 'lucide-react';
 
 const ChallengeHub: React.FC = () => {
   const { currentUser } = useAuth();
-  const { currentChallenge, availableChallenges, isLoading, loadChallenge, loadAllChallenges } = useChallenge();
+  const { currentChallenge, availableChallenges, completedChallenges, isLoading, loadChallenge, loadAllChallenges, refreshLeaderboard, setIsLoading, hideCompletedChallenges, setHideCompletedChallenges } = useChallenge();
   const [showChallenge, setShowChallenge] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
   const [showChallengeSelector, setShowChallengeSelector] = useState(false);
@@ -20,21 +20,62 @@ const ChallengeHub: React.FC = () => {
     
     // Load all challenges
     loadAllChallenges();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Don't add loadAllChallenges to the dependency array to avoid infinite loops
 
-  const handleStartChallenge = () => {
-    setShowChallenge(true);
+  const handleStartChallenge = async () => {
+    try {
+      if (!currentChallenge) {
+        console.error('Cannot start challenge: No challenge selected');
+        return;
+      }
+      
+      console.log(`Starting challenge: ${currentChallenge.id}`);
+      setIsLoading(true);
+      
+      // Refresh the leaderboard before starting
+      await refreshLeaderboard(currentChallenge.id);
+      
+      // Set a small delay to ensure everything is loaded
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setShowChallenge(true);
+      setIsLoading(false);
+      console.log('Challenge started successfully');
+    } catch (error) {
+      console.error('Error starting challenge:', error);
+      setIsLoading(false);
+    }
   };
   
-  const handleSelectChallenge = (challengeId: string) => {
-    loadChallenge(challengeId);
-    setShowChallengeSelector(false);
-    setShowChallenge(false);
+  const handleSelectChallenge = async (challengeId: string) => {
+    try {
+      setIsLoading(true);
+      await loadChallenge(challengeId);
+      setShowChallengeSelector(false);
+      // Don't immediately show the challenge, wait for data to load
+      // setShowChallenge(false); // Removed to prevent unmount/remount cycle
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error selecting challenge:', error);
+      setIsLoading(false);
+    }
   };
   
   const handleRefreshChallenges = () => {
     loadAllChallenges();
   };
+  
+  // Filter challenges based on the hideCompletedChallenges setting
+  const filteredChallenges = useMemo(() => {
+    if (!hideCompletedChallenges || !completedChallenges || completedChallenges.length === 0) {
+      return availableChallenges;
+    }
+    
+    return availableChallenges.filter(challenge => 
+      !completedChallenges.includes(challenge.id)
+    );
+  }, [availableChallenges, completedChallenges, hideCompletedChallenges]);
 
   if (isLoading) {
     return (
@@ -80,13 +121,25 @@ const ChallengeHub: React.FC = () => {
             {/* Challenge Selector */}
             <div className="flex justify-center mb-4">
               <div className="relative">
-                <button 
-                  onClick={() => setShowChallengeSelector(!showChallengeSelector)}
-                  className="px-4 py-2 bg-violet-800/50 hover:bg-violet-700/50 rounded-lg text-white flex items-center space-x-2 border border-violet-600/30"
-                >
-                  <span>Select Challenge</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showChallengeSelector ? 'rotate-180' : ''}`} />
-                </button>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setShowChallengeSelector(!showChallengeSelector)}
+                      className="px-4 py-2 bg-violet-800/50 hover:bg-violet-700/50 rounded-lg text-white flex items-center space-x-2 border border-violet-600/30"
+                    >
+                      <span>Select Challenge</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showChallengeSelector ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    <label className="flex items-center space-x-2 text-sm text-violet-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hideCompletedChallenges}
+                        onChange={(e) => setHideCompletedChallenges(e.target.checked)}
+                        className="rounded border-violet-600/30 text-violet-600 focus:ring-violet-500"
+                      />
+                      <span>Hide completed</span>
+                    </label>
+                  </div>
                 
                 {showChallengeSelector && (
                   <div className="absolute z-50 mt-2 w-64 bg-slate-900 border border-violet-600/30 rounded-lg shadow-xl shadow-violet-900/30 overflow-hidden">
@@ -101,13 +154,18 @@ const ChallengeHub: React.FC = () => {
                       </button>
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {availableChallenges.map(challenge => (
+                      {filteredChallenges.map(challenge => (
                         <button
                           key={challenge.id}
                           onClick={() => handleSelectChallenge(challenge.id)}
                           className={`w-full text-left p-3 hover:bg-violet-800/30 transition-colors ${currentChallenge?.id === challenge.id ? 'bg-violet-800/50' : ''}`}
                         >
-                          <div className="font-medium text-white">{challenge.title}</div>
+                          <div className="font-medium text-white flex items-center">
+                            {challenge.title}
+                            {completedChallenges && completedChallenges.includes(challenge.id) && (
+                              <CheckCircle className="w-4 h-4 text-green-400 ml-2" />
+                            )}
+                          </div>
                           <div className="text-xs text-violet-400 mt-1 flex justify-between">
                             <span>{challenge.questions.length} questions</span>
                             <span>{challenge.totalPoints} points</span>
@@ -115,7 +173,7 @@ const ChallengeHub: React.FC = () => {
                         </button>
                       ))}
                       
-                      {availableChallenges.length === 0 && (
+                      {filteredChallenges.length === 0 && (
                         <div className="p-3 text-sm text-violet-400 text-center">
                           No challenges available
                         </div>
@@ -214,14 +272,17 @@ const ChallengeHub: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <MathChallenge />
+            <>
+              {console.log('ChallengeHub: Rendering MathChallenge. showChallenge:', showChallenge, 'currentChallenge:', currentChallenge)}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                  <MathChallenge />
+                </div>
+                <div>
+                  <Leaderboard />
+                </div>
               </div>
-              <div>
-                <Leaderboard />
-              </div>
-            </div>
+            </>
           )}
         </div>
       </div>

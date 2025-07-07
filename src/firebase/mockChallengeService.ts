@@ -3,7 +3,7 @@ import { sampleMathChallenge, algebraChallenge, geometryChallenge } from '../dat
 
 // Mock data storage
 let challenges: MathChallenge[] = [];
-let attempts: (UserChallengeAttempt & { id: string })[] = [];
+const attempts: (UserChallengeAttempt & { id: string })[] = [];
 let nextAttemptId = 1;
 
 // Initialize mock challenges

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppState, MathProblem, SkillArea, StudentProgress } from '../types';
+import { AppState, SkillArea } from '../types';
 import { diagnosticProblems, practiceProblems } from '../data/problems';
 
 const initialSkillAreas: SkillArea[] = [

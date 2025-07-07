@@ -272,7 +272,7 @@ const SkillConstellation: React.FC = () => {
       </div>
 
       {/* CSS for custom animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in {
           from { opacity: 0; transform: scale(0.8); }
           to { opacity: 1; transform: scale(1); }
